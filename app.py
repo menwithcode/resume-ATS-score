@@ -1,11 +1,17 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from docx import Document
 import google.generativeai as genai
 
-# ✅ Your Gemini API Key
-API_KEY = "AIzaSyD8AEZfTsb1HvMDIEJSYpCmyu-t5krXJ-M"
+# Load environment variables from .env (for local development)
+load_dotenv()
+
+API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    st.error("API key not found. Please set the GEMINI_API_KEY environment variable.")
+    st.stop()
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
 
@@ -68,7 +74,7 @@ Return the output in the following format:
 # --- Streamlit UI ---
 st.set_page_config(page_title="Resume Match Analyzer", page_icon="📄", layout="centered")
 
-# Custom CSS for dark theme
+# Custom CSS for dark theme and modern card UI
 dark_grey = "#23272f"
 css = f"""
 <style>
@@ -76,22 +82,47 @@ body {{ background-color: {dark_grey}; }}
 [data-testid="stAppViewContainer"] {{ background: {dark_grey}; }}
 [data-testid="stHeader"] {{ background: {dark_grey}; }}
 [data-testid="stSidebar"] {{ background: #181a20; }}
-.stTextInput, .stTextArea, .stFileUploader {{ background: #2c2f36; color: #fff; }}
-.stButton>button {{ background: #444654; color: #fff; border-radius: 8px; }}
+
+.main-card {{
+    background: #262a32;
+    border-radius: 18px;
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.25);
+    padding: 2.5rem 2rem 2rem 2rem;
+    max-width: 520px;
+    margin: 2.5rem auto 2rem auto;
+}}
+.stTextInput, .stTextArea, .stFileUploader {{ background: #2c2f36 !important; color: #fff !important; border-radius: 8px; border: 1px solid #444654; }}
+.stButton>button {{ background: linear-gradient(90deg, #444654 0%, #23272f 100%); color: #fff; border-radius: 8px; font-size: 1.1rem; padding: 0.6rem 1.5rem; border: none; }}
+.stButton>button:hover {{ background: #5a5d6a; }}
 .stMarkdown, .stText, .stTitle, .stHeader {{ color: #fff; }}
+.result-box {{
+    background: #23272f;
+    border-radius: 12px;
+    border: 1px solid #444654;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    color: #fff;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.15);
+}}
+.stSpinner > div > div {{ color: #fff !important; }}
 </style>
 """
 st.markdown(css, unsafe_allow_html=True)
 
-st.title("📄 Resume Match Analyzer")
+st.markdown('<div class="main-card">', unsafe_allow_html=True)
+
 st.markdown("""
-Upload a resume (**PDF** or **DOCX**) and paste the job description below. Get an instant AI-powered match analysis!
-""")
+<h1 style='text-align:center; font-size:2.5rem; font-weight:700; margin-bottom:0.5rem;'>📄 Resume Match Analyzer</h1>
+<p style='text-align:center; color:#b0b3b8; font-size:1.1rem;'>Upload a resume (<b>PDF</b> or <b>DOCX</b>) and paste the job description below.<br>Get an instant <span style='color:#00bfae;'>AI-powered</span> match analysis!</p>
+""", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload Resume (.pdf or .docx)", type=["pdf", "docx"])
 job_description = st.text_area("Paste Job Description", height=200)
 
-if st.button("Analyze Resume"):
+analyze_btn = st.button("Analyze Resume")
+
+if analyze_btn:
     if uploaded_file and job_description.strip():
         with st.spinner("Extracting resume text..."):
             resume_text = extract_resume_text(uploaded_file)
@@ -101,6 +132,8 @@ if st.button("Analyze Resume"):
                 result = get_resume_score(resume_text, job_description)
             st.markdown("---")
             st.subheader("✅ Resume Match Analysis:")
-            st.markdown(f"<div style='white-space: pre-wrap;'>{result}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='result-box'>{result}</div>", unsafe_allow_html=True)
     else:
         st.warning("Please upload a resume and enter a job description.")
+
+st.markdown('</div>', unsafe_allow_html=True)
