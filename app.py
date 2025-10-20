@@ -17,14 +17,12 @@ if not API_KEY:
     st.error("❌ API Key not found. Please set GEMINI_API_KEY in Streamlit Secrets or .env file.")
     st.stop()
 
-st.write("✅ API Key loaded (first 6 chars): ", API_KEY[:6] + "******")
 
 # -------------------------
 # Configure Gemini
 # -------------------------
 genai.configure(api_key=API_KEY)
 
-# Correct model name
 # Initialize Gemini model
 model = genai.GenerativeModel("models/gemini-2.5-flash")
 
