@@ -14,7 +14,9 @@ if not API_KEY:
     st.error("API key not found. Please set the GEMINI_API_KEY environment variable.")
     st.stop()
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+# Initialize Gemini model
+model = genai.GenerativeModel("models/gemini-2.5-flash")
+
 
 def extract_text_from_pdf(pdf_file):
     text = ""
