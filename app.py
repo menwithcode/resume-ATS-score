@@ -5,40 +5,23 @@ from PyPDF2 import PdfReader
 from docx import Document
 import google.generativeai as genai
 
-# -------------------------
-# Load environment variables
-# -------------------------
+# Load environment variables from .env (for local development)
 load_dotenv()
 
-# Streamlit Secrets first (for deployment), fallback to .env (local)
-API_KEY = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
 
 if not API_KEY:
-    st.error("❌ API Key not found. Please set GEMINI_API_KEY in Streamlit Secrets or .env file.")
+    st.error("API key not found. Please set the GEMINI_API_KEY environment variable.")
     st.stop()
-
-st.write("✅ API Key loaded (first 6 chars): ", API_KEY[:6] + "******")
-
-# -------------------------
-# Configure Gemini
-# -------------------------
 genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
 
-# Correct model name
-model = genai.GenerativeModel("models/gemini-2.5-flash")
-
-
-# -------------------------
-# Resume Parsing Functions
-# -------------------------
 def extract_text_from_pdf(pdf_file):
     text = ""
     try:
         reader = PdfReader(pdf_file)
         for page in reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
+            text += page.extract_text() + "\n"
     except Exception as e:
         st.error(f"❌ Error reading PDF: {e}")
     return text.strip()
@@ -62,9 +45,6 @@ def extract_resume_text(uploaded_file):
         st.error("❌ Unsupported file type. Only .pdf and .docx are supported.")
         return ""
 
-# -------------------------
-# GPT Analysis Function
-# -------------------------
 def get_resume_score(resume_text, job_description):
     prompt = f"""
 You are an AI recruitment assistant.
@@ -89,19 +69,13 @@ Return the output in the following format:
 4. Resume Match Score (in %):
 5. Reasoning:
 """
-    try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        st.error(f"❌ Error calling Gemini API: {e}")
-        return "Error generating resume analysis."
+    response = model.generate_content(prompt)
+    return response.text
 
-# -------------------------
-# Streamlit UI
-# -------------------------
+# --- Streamlit UI ---
 st.set_page_config(page_title="Resume Match Analyzer", page_icon="📄", layout="centered")
 
-# Custom CSS
+# Custom CSS for dark theme and modern card UI
 dark_grey = "#23272f"
 css = f"""
 <style>
@@ -147,18 +121,22 @@ st.markdown("""
 uploaded_file = st.file_uploader("Upload Resume (.pdf or .docx)", type=["pdf", "docx"])
 job_description = st.text_area("Paste Job Description", height=200)
 
-if st.button("Analyze Resume"):
+analyze_btn = st.button("Analyze Resume")
+
+if analyze_btn:
     if uploaded_file and job_description.strip():
         with st.spinner("Extracting resume text..."):
             resume_text = extract_resume_text(uploaded_file)
         if resume_text:
-            st.success("✅ Resume text extracted.")
+            st.success("Resume text extracted.")
             with st.spinner("Analyzing with Gemini..."):
                 result = get_resume_score(resume_text, job_description)
             st.markdown("---")
             st.subheader("✅ Resume Match Analysis:")
             st.markdown(f"<div class='result-box'>{result}</div>", unsafe_allow_html=True)
     else:
-        st.warning("⚠ Please upload a resume and enter a job description.")
+        st.warning("Please upload a resume and enter a job description.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
+
