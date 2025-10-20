@@ -8,7 +8,8 @@ import google.generativeai as genai
 # Load environment variables from .env (for local development)
 load_dotenv()
 
-API_KEY = os.getenv("GEMINI_API_KEY")
+API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+
 if not API_KEY:
     st.error("API key not found. Please set the GEMINI_API_KEY environment variable.")
     st.stop()
@@ -137,3 +138,4 @@ if analyze_btn:
         st.warning("Please upload a resume and enter a job description.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
