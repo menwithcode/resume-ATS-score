@@ -8,13 +8,20 @@ import google.generativeai as genai
 # Load environment variables from .env (for local development)
 load_dotenv()
 
-API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+# First check in Streamlit secrets (for deployment), fallback to .env (local)
+API_KEY = None
+if "GEMINI_API_KEY" in st.secrets:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+else:
+    API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not API_KEY:
-    st.error("API key not found. Please set the GEMINI_API_KEY environment variable.")
+    st.error("❌ API Key not found. Please set GEMINI_API_KEY in Streamlit Secrets or .env file.")
     st.stop()
+
+# Configure Google Gemini
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash")  # ✅ correct model name
 
 def extract_text_from_pdf(pdf_file):
     text = ""
@@ -75,7 +82,7 @@ Return the output in the following format:
 # --- Streamlit UI ---
 st.set_page_config(page_title="Resume Match Analyzer", page_icon="📄", layout="centered")
 
-# Custom CSS for dark theme and modern card UI
+# Custom CSS for dark theme and modern UI
 dark_grey = "#23272f"
 css = f"""
 <style>
@@ -121,9 +128,7 @@ st.markdown("""
 uploaded_file = st.file_uploader("Upload Resume (.pdf or .docx)", type=["pdf", "docx"])
 job_description = st.text_area("Paste Job Description", height=200)
 
-analyze_btn = st.button("Analyze Resume")
-
-if analyze_btn:
+if st.button("Analyze Resume"):
     if uploaded_file and job_description.strip():
         with st.spinner("Extracting resume text..."):
             resume_text = extract_resume_text(uploaded_file)
@@ -138,4 +143,3 @@ if analyze_btn:
         st.warning("Please upload a resume and enter a job description.")
 
 st.markdown('</div>', unsafe_allow_html=True)
-
