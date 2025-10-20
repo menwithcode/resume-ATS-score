@@ -25,7 +25,8 @@ st.write("✅ API Key loaded (first 6 chars): ", API_KEY[:6] + "******")
 genai.configure(api_key=API_KEY)
 
 # Correct model name
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("models/gemini-2.5-flash")
+
 
 # -------------------------
 # Resume Parsing Functions
@@ -161,3 +162,4 @@ if st.button("Analyze Resume"):
         st.warning("⚠ Please upload a resume and enter a job description.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
